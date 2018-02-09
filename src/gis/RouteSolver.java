@@ -49,18 +49,37 @@ public class RouteSolver {
         return length;
     }
 
-    public Integer[] findMinRouteGreedy() {
+    public Route findMinRouteGreedy() {
         int n = roads.length;
         boolean[] visited = new boolean[n];
-        Integer[] route = new Integer[n];
-        route[0] = 0;
+        Route route = new Route(new Integer[n], 0);
+        route.cities[0] = 0;
         visited[0] = true;
-        route[n - 1] = n - 1;
+        route.cities[n - 1] = n - 1;
         visited[n - 1] = true;
         for (int i = 1; i < n - 1; ++i) {
-            //int dest = findClosestNeighbor(route[i - 1]);
-            //route
+            int from = route.cities[i - 1];
+            int to = findClosestUnvisitedNeighbor(from, visited);
+            route.cities[i] = to;
+            route.length += roads[from][to];
+            visited[to] = true;
         }
-        return null;
+        // + last road
+        route.length += roads[route.cities[n - 2]][n - 1];
+        return route;
+    }
+
+    public int findClosestUnvisitedNeighbor(int from, boolean[] visited) {
+        int result = -1;
+        int minDistance = Integer.MAX_VALUE;
+        for (int i = 0; i < roads.length; ++i)
+            if (i != from && !visited[i]) {
+                int distance = roads[from][i];
+                if (distance < minDistance) {
+                    result = i;
+                    minDistance = distance;
+                }
+            };
+        return result;
     }
 }
