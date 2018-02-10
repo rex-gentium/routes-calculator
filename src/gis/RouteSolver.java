@@ -1,10 +1,13 @@
 package gis;
 
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 
 public class RouteSolver {
 
-    public static class Route {
+    public class Route {
         public Integer[] cities;
         public int length;
         public Route(Integer[] cities, int length) {
@@ -69,7 +72,7 @@ public class RouteSolver {
         return route;
     }
 
-    public int findClosestUnvisitedNeighbor(int from, boolean[] visited) {
+    private int findClosestUnvisitedNeighbor(int from, boolean[] visited) {
         int result = -1;
         int minDistance = Integer.MAX_VALUE;
         for (int i = 0; i < roads.length; ++i)
@@ -81,5 +84,71 @@ public class RouteSolver {
                 }
             };
         return result;
+    }
+
+    private class WoodyNeighbor {
+        public int insertionIndex;
+        public int city;
+        public int distanceToChain; // equals roads: prevCity->city + city->nextCity - prevCity->nextCity
+    }
+
+    public Route findMinRouteWoody() {
+        int n = roads.length;
+        List<Integer> route = new LinkedList<>();
+        route.add(0);
+        route.add(n - 1);
+        int routeLength = roads[0][n - 1];
+        List<Integer> unvisited = new LinkedList<>();
+        for (int i = 1; i < n - 1; ++i)
+            unvisited.add(i);
+        while (!unvisited.isEmpty()) {
+            WoodyNeighbor minNeighbor = new WoodyNeighbor();
+            minNeighbor.distanceToChain = Integer.MAX_VALUE;
+            for (int i = 0; i < route.size() - 1; ++i) {
+                /* chain = a sequence of 2 cities within current route
+                 * we want do find the "closest" unvisited city for each chain
+                 * then we choose the closest one of them and include it within the corresponding chain*/
+                WoodyNeighbor chainNeighbor = findClosestTriangleNeighbor(route.get(i), route.get(i + 1), unvisited);
+                if (chainNeighbor.distanceToChain < minNeighbor.distanceToChain) {
+                    minNeighbor = chainNeighbor;
+                    minNeighbor.insertionIndex = i + 1; // place between current i and i + 1
+                }
+            }
+            route.add(minNeighbor.insertionIndex, minNeighbor.city);
+            routeLength += minNeighbor.distanceToChain;
+            unvisited.remove((Object) minNeighbor.city); // need to delete the city name, not by index
+        }
+        return new Route(route.toArray(new Integer[route.size()]), routeLength);
+    }
+
+    private WoodyNeighbor findClosestTriangleNeighbor(int chainStart, int chainEnd, List<Integer> unvisited) {
+        WoodyNeighbor minNeighbor = new WoodyNeighbor();
+        minNeighbor.city = -1;
+        for (int neighbor : unvisited) {
+            int distance = roads[chainStart][neighbor] + roads[neighbor][chainEnd] - roads[chainStart][chainEnd];
+            if (distance < minNeighbor.distanceToChain || minNeighbor.city < 0) {
+                minNeighbor.city = neighbor;
+                minNeighbor.distanceToChain = distance;
+            }
+        }
+        return minNeighbor;
+    }
+
+    public Route findMinRouteSimply() {
+        int n = roads.length;
+        List<Integer> unvisited = new LinkedList<>();
+        for (int i = 1; i < n - 1; ++i)
+            unvisited.add(i);
+        Route route = new Route(new Integer[n], 0);
+        route.cities[0] = 0;
+        route.cities[n - 1] = n - 1;
+        Random random = new Random();
+        for (int i = 1; i < n - 1; ++i) {
+            int index = random.nextInt(unvisited.size());
+            route.cities[i] = unvisited.remove(index);
+            route.length += roads[route.cities[i - 1]][index];
+        }
+        route.length += roads[route.cities[n - 2]][n - 1];
+        return route;
     }
 }
