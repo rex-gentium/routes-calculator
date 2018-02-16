@@ -2,6 +2,8 @@ package gis;
 
 import gis.RouteSolver.Route;
 
+import java.util.Arrays;
+
 public class Main {
 
     static final int[][] roads = new int[][]{
@@ -63,6 +65,11 @@ public class Main {
         time = System.currentTimeMillis();
         routeRandom = routeSolver.findMinRouteSimply();
         printRoute(routeRandom, System.currentTimeMillis() - time);
+
+        improveRoute(routeSolver, routeRandom, 2);
+        printRoute(routeRandom, 0);
+        improveRoute(routeSolver, routeRandom, 3);
+        printRoute(routeRandom, 0);
     }
 
     public static void printRoute(Route route, long time) {
@@ -71,5 +78,22 @@ public class Main {
         System.out.println();
         System.out.println("Route length: " + route.length);
         System.out.println("Execution time: " + time);
+    }
+
+    public static void improveRoute(RouteSolver lengthProvider, Route route, int windowWidth) {
+        for (int i = 1; i < route.cities.length - 1 - windowWidth; ++i) {
+            Integer[] window = Arrays.copyOfRange(route.cities, i, i + windowWidth);
+            Permutations<Integer> permutation = new Permutations<>(window);
+            while (permutation.nextPermutation() != null) {
+                Integer[] newRoute = Arrays.copyOf(route.cities, route.cities.length);
+                for (int j = 0; j < windowWidth; ++j)
+                    newRoute[i + j] = permutation.get()[j];
+                int newLength = lengthProvider.calculateLength(route.cities);
+                if (newLength < route.length) {
+                    route.cities = newRoute;
+                    route.length = newLength;
+                }
+            }
+        }
     }
 }

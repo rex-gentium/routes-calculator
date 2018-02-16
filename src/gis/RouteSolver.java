@@ -7,7 +7,7 @@ import java.util.Random;
 
 public class RouteSolver {
 
-    public class Route {
+    public static class Route {
         public Integer[] cities;
         public int length;
         public Route(Integer[] cities, int length) {
